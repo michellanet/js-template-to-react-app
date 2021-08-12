@@ -1,0 +1,62 @@
+# This is a sample build configuration for JavaScript.
+# Check our guides at https://confluence.atlassian.com/x/14UWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: node:10.15.3
+
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Test
+          caches:
+            - node
+          script:
+            - npm install
+            - REACT_APP_ENVIRONMENT=test npm test
+      - step:
+          name: Build & Deploy
+          script:
+            - npm install --production
+            - REACT_APP_ENVIRONMENT=production CI=false npm run build
+            - pipe: atlassian/aws-s3-deploy:0.5.0
+              variables:
+                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+                S3_BUCKET: 'testtalent'
+                ACL: 'public-read'
+                LOCAL_PATH: 'build'
+                CACHE_CONTROL: 'max-age=3600'
+                DELETE_FLAG: 'true'
+            - pipe: atlassian/aws-cloudfront-invalidate:0.3.3
+              variables:
+                DISTRIBUTION_ID: 'E31LQSQG8CLZI3'
+
+    production:
+      - step:
+          name: Test
+          caches:
+            - node
+          script:
+            - npm install
+            - REACT_APP_ENVIRONMENT=test npm test
+      - step:
+          name: Build & Deploy
+          script:
+            - npm install --production
+            - REACT_APP_ENVIRONMENT=production CI=false npm run build
+            - pipe: atlassian/aws-s3-deploy:0.5.0
+              variables:
+                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+                S3_BUCKET: 'talent.tasttlig.com'
+                ACL: 'public-read'
+                LOCAL_PATH: 'build'
+                CACHE_CONTROL: 'max-age=3600'
+                DELETE_FLAG: 'true'
+            - pipe: atlassian/aws-cloudfront-invalidate:0.3.3
+              variables:
+                DISTRIBUTION_ID: 'E2RGQX3C5TC2VA'
